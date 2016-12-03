@@ -1,0 +1,125 @@
+name: Glare
+main: com.gmail.mooman219.core.Loader
+startup: startup
+version: ${project.parent.version}
+spoftdepend: [WorldGuard, ProtocolLib]
+depend: [WorldGuard, ProtocolLib]
+commands:
+    addgraveyard:
+        aliases:
+        - gag
+    cleargraveyards:
+        aliases:
+        - gcg
+    totalgraveyards:
+        aliases:
+        - gtg
+    teleportclosestgraveyard:
+        aliases:
+        - gtpcg
+    removegraveyard:
+        aliases:
+        - greg
+    listgraveyards:
+        aliases:
+        - glg
+    teleportgraveyard:
+        aliases:
+        - gtpg
+    global:
+        aliases:
+        - g
+        - shout
+    message:
+        aliases:
+        - tell
+        - msg
+        - m
+    reply:
+        aliases:
+        - r
+    mute:
+    whois:
+        aliases:
+        - stats
+        - who
+        - records
+        - me
+    test:
+    addmineral:
+        aliases:
+        - mam
+    clearminerals:
+        aliases:
+        - mcm
+    listminerals:
+        aliases:
+        - mlm
+    removemineral:
+        aliases:
+        - mrem
+    revertminerals:
+        aliases:
+        - mrm
+    totalminerals:
+        aliases:
+        - mtm
+    memory:
+        aliases:
+        - mem
+        - lag
+    modifyid:
+    modifycombat:
+    modifylock:
+    modifydescription:
+    modifyname:
+    newregion:
+    setregion:
+    region:
+        aliases:
+        - regioninfo
+        - whatregion
+        - whatzone
+        - whatarea
+        - whereami
+    setchatrange:
+        aliases:
+        - csr
+    setoverheadprefix:
+        aliases:
+        - csop
+    setoverheadsuffix:
+        aliases:
+        - csos
+    music:
+        aliases:
+        - tunes
+        - jam
+    shriek:
+        aliases:
+        - scream
+    gamemode:
+        aliases:
+        - gm
+    itemstats:
+        aliases:
+        - itemlookup
+        - whatitem
+        - whatisthis
+    resetinventory:
+        aliases:
+        - resetitems
+        - fixinventory
+    toggleworldsaving:
+        aliases:
+        - togglesworldsave
+        - worldsave
+    suicide:
+        aliases:
+        - mylittleponyisgood
+        - kill
+    heal:
+        aliases:
+        - hailmooman
+    wipe:
+    setrank:

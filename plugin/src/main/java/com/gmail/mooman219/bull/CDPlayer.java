@@ -1,0 +1,468 @@
+package com.gmail.mooman219.bull;
+
+import com.gmail.mooman219.core.Loader;
+import com.gmail.mooman219.frame.database.MongoHelper;
+import com.gmail.mooman219.frame.rank.Rank;
+import com.gmail.mooman219.frame.text.Chat;
+import com.gmail.mooman219.frame.text.TextHelper;
+import com.gmail.mooman219.handler.database.CHDatabase;
+import com.gmail.mooman219.handler.database.type.DownloadReason;
+import com.gmail.mooman219.handler.database.type.UploadReason;
+import com.gmail.mooman219.handler.task.CHTask;
+import com.gmail.mooman219.layout.Damageable;
+import com.gmail.mooman219.layout.PlayerData;
+import com.gmail.mooman219.module.chat.store.PDChat;
+import com.gmail.mooman219.module.item.store.PDItem;
+import com.gmail.mooman219.module.login.store.PDLogin;
+import com.gmail.mooman219.module.region.store.PDRegion;
+import com.gmail.mooman219.module.service.CCService;
+import com.gmail.mooman219.module.service.store.PDService;
+import com.gmail.mooman219.module.stat.store.PDStat;
+import com.liquiddonut.CustomData;
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBObject;
+import net.md_5.bungee.api.connection.PendingConnection;
+import net.md_5.bungee.api.event.PostLoginEvent;
+import net.md_5.bungee.api.event.PreLoginEvent;
+import net.md_5.bungee.protocol.packet.Login;
+import net.minecraft.server.v1_11_R1.*;
+import org.bukkit.*;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_11_R1.entity.CraftPlayer;
+import org.bukkit.entity.Player;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.UUID;
+
+public class CDPlayer extends CustomData {
+    // [+] Data information
+    // [ ]---[+] Offline
+    private final UUID playerUUID;
+    // [ ]---[+] Online
+    private Player player = null;
+/*    private Sidebar sidebar = null;
+    private TableTabList tabList = null;
+    private String prefix = "";
+    private String suffix = "";*/
+    // [+] Module information
+    private ArrayList<PlayerData> playerData = null;
+    private PDService service = null;
+    private PDLogin login = null;
+    private PDChat chat = null;
+    private PDStat stat = null;
+    private PDRegion region = null;
+    private PDItem item = null;
+
+    public CDPlayer(UUID playerUUID) {
+        this.playerUUID = playerUUID;
+        // Create data
+        this.service = addPlayerData(new PDService(this));
+        this.login = addPlayerData(new PDLogin(this));
+        this.chat = addPlayerData(new PDChat(this));
+        this.stat = addPlayerData(new PDStat(this));
+        this.region = addPlayerData(new PDRegion(this));
+        this.item = addPlayerData(new PDItem(this));
+    }
+
+    public PDItem item() {
+        return item;
+    }
+
+    public PDRegion region() {
+        return region;
+    }
+
+    public PDStat stat() {
+        return stat;
+    }
+
+    public PDChat chat() {
+        return chat;
+    }
+
+    public PDLogin login() {
+        return login;
+    }
+
+    public PDService service() {
+        return service;
+    }
+
+    /**
+     * Management
+     */
+
+    /**
+     * Marks the PlayerData as active so it can be called when needed
+     */
+    private <T extends PlayerData> T addPlayerData(T data) {
+        if(playerData == null) {
+            this.playerData = new ArrayList<PlayerData>();
+        }
+        this.playerData.add(data);
+        return data;
+    }
+
+    /**
+     * Called in PlayerPreLoginEvent.
+     * This is done in another thread.
+     */
+    public void processPreLogin() {
+        for(PlayerData playerdata : playerData) {
+            playerdata.create();
+        }
+    }
+
+    /**
+     * Called in PlayerLoginEvent.
+     */
+    public void processLogin(Player player) {
+        this.player = player;
+    }
+
+    /**
+     * Called in PlayerJoinEvent.
+     */
+    public void processJoin() {
+/*
+        sidebar = new Board(this, username, prefix + username + suffix, BoardDisplayType.SIDEBAR);
+        tabList = Loader.getPlugin().tabbed.newTableTabList(getPlayer(), 4);
+        sidebar = new Sidebar("Whalecum to Glare");
+*/
+
+    }
+
+    /**
+     * Called in PlayerQuitEvent.
+     */
+    public void processQuit() {
+        /*sidebar = null;
+        tabList = null;*/
+        player = null;
+        /*prefix = null;
+        suffix = null;*/
+    }
+
+    /**
+     * Called from the UploadRequest.
+     * This is done in another thread.
+     */
+    public void processRemoval() {
+        for(PlayerData data : playerData) {
+            data.destroy();
+        }
+        playerData.clear();
+    }
+
+    /*
+     * Database
+     */
+
+    /**
+     * Returns true if it failed.
+     */
+    public boolean load(DownloadReason reason, DBObject playerObject) {
+        for(PlayerData data : playerData) {
+            try {
+                data.load(reason, MongoHelper.getValue(playerObject, data.getTag(), new BasicDBObject()));
+            } catch(Exception e) {
+                Loader.warning("Error in sync() for " + Bukkit.getPlayer(playerUUID).getName() + ".");
+                e.printStackTrace();
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public BasicDBObject save(UploadReason reason) {
+        BasicDBObject template = new BasicDBObject();
+        for(PlayerData data : playerData) {
+            try {
+                template.putAll(data.save(reason));
+            } catch(Exception e) {
+                Loader.warning("Error in getTemplate() for " + Bukkit.getPlayer(playerUUID).getName() + ".");
+                e.printStackTrace();
+            }
+        }
+        return template;
+    }
+
+    /**
+     * Damageable
+     */
+
+    /**
+     * This will make the health number update on the players screen.
+     * This WILL NOT kill a player.
+     */
+/*    public void updateHealth() {
+        if(!isDead()) {
+            double percent = stat.healthCur / stat.healthMax;
+            double health = percent * 20D; health = health <= 0 ? 1 : health;
+            updateJump(percent);
+            updateMoveSpeed(percent);
+            player.setHealth(health);
+        }
+        tabList.set(0, 19, new TextTabItem("100/200", 0, Skins.DECOR_DOUGHNUT));
+        tabList.update();
+        sidebar.modifyName("hp", CCDamage.FRM.BARHEALTH.parse(stat.healthCur));
+        CCDamage.healthBoard.updatePlayer(this);
+    }*/
+
+    /**
+     * Used the percent to update the jump modifier applied on players.
+     * The lower your health, the lower you can jump.
+     */
+    public void updateJump(double percent) {
+        int modifier;
+        if(percent > 0.5D) { // 100% - 50%
+            modifier = 1;
+        } else if(percent > 0.25D) { // 50% - 25%
+            modifier = 0;
+        } else { // 25% - 00%
+            modifier = -1;
+        }
+        player.removePotionEffect(PotionEffectType.JUMP);
+        player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, modifier, true));
+        getHandle().updateEffects = false;
+    }
+
+    /**
+     * Used the percent to update the movespeed of players.
+     * The lower your health, the slower you move
+     *
+     *  public float flySpeed = 0.05F;
+     *  public float walkSpeed = 0.1F;
+     */
+    public void updateMoveSpeed(double percent) {
+        float moveSpeed = 0.2f;
+        if(percent > 0.5D) { // 100% - 50%
+            moveSpeed *= 1.2f;
+        } else if(percent > 0.25D) { // 50% - 25%
+            moveSpeed *= 1.0f;
+        } else { // 25% - 00%
+            moveSpeed *= 0.8f;
+        }
+        if(lastMoveSpeed == moveSpeed) {
+            return;
+        }
+        lastMoveSpeed = moveSpeed;
+        player.setWalkSpeed(moveSpeed);
+    }
+    private float lastMoveSpeed = -10f;
+
+/*    @Override
+    public void damage(double amount) {
+        if(!isDead()) {
+            player.damage(0d);
+            WorldHelper.playEffect(player.getEyeLocation(), Effect.STEP_SOUND, Material.REDSTONE_WIRE.getId());
+        }
+        setHealth(stat.healthCur - amount);
+        setLastDamaged(TimeHelper.time());
+    }*/
+
+/*
+    @Override
+    public double getHealth() {
+        return stat.healthCur;
+    }
+
+    @Override
+    public long getLastDamaged() {
+        return stat.getLastDamaged();
+    }
+*/
+
+/*
+    @Override
+    public double getMaxHealth() {
+        return stat.healthMax;
+    }
+
+    @Override
+    public void heal(double amount) {
+        if(!isDead()) {
+            WorldHelper.playEffect(player.getEyeLocation(), Effect.STEP_SOUND, Material.EMERALD_BLOCK.getId());
+        }
+        setHealth(stat.healthCur + amount);
+    }
+*/
+
+  /*  @Override
+    public boolean isDead() {
+        return stat.healthCur <= 0 || player.isDead();
+    }
+
+    @Override
+    public boolean isOverflowing() {
+        return stat.healthCur > stat.healthMax;
+    }
+
+    @Override
+    public void kill() {
+        if(!player.isDead()) {
+            player.setHealth(0d);
+        }
+        stat.healthCur = 0;
+        updateHealth();
+    }
+
+    @Override
+    public void resetHealth() {
+        stat.healthCur = stat.healthMax;
+        updateHealth();
+    }
+
+    @Override
+    public void setHealth(double amount) {
+        stat.healthCur = amount;
+        // Normal health overflow check
+        if(isOverflowing()) {
+            resetHealth();
+        } else if(isDead()) {
+            kill();
+        } else {
+            updateHealth();
+        }
+    }
+
+    @Override
+    public void setLastDamaged(long time) {
+        stat.setLastDamaged(time);
+    }
+
+    @Override
+    public void setMaxHealth(double amount) {
+        stat.healthMax = amount;
+        // Max health shouldn't be 0 EVER
+        if(stat.healthMax <= 0) {
+            stat.healthMax = 1;
+        }
+        setHealth(stat.healthCur);
+    }*/
+
+    /*
+     * Live
+     */
+
+    public void chat(final String message) {
+        CHTask.getManager().runPlugin(new Runnable() {
+            @Override
+            public void run() {
+                EntityPlayer handle = getHandle();
+                if(handle == null) {
+                    Loader.warning("chat(): Null handle for '" + Bukkit.getPlayer(playerUUID).getName() + "'");
+                } else if(handle.playerConnection == null) {
+                    Loader.warning("chat(): Null connection for '" + Bukkit.getPlayer(playerUUID).getName() + "'");
+                } else {
+                    handle.playerConnection.chat(message, true);
+                }
+            }
+        });
+    }
+
+    public float getMoveSpeed() {
+        return player.getWalkSpeed();
+    }
+
+/*    public String getOverheadPrefix() {
+        return prefix;
+    }
+
+    public String getOverheadSuffix() {
+        return suffix;
+    }*/
+
+    /**
+     * This can return null depending on when it's called.
+     */
+    public Player getPlayer() {
+        return player;
+    }
+
+/*    public Sidebar getSidebar() {
+        return sidebar;
+    }
+
+    public TableTabList getTab() {
+        return tabList;
+    }*/
+
+    public World getWorld() {
+       return player.getWorld();
+    }
+
+    public UUID getPlayerUUID() {
+        return playerUUID;
+    }
+
+    public String getUsername() {
+        return Bukkit.getPlayer(playerUUID).getName();
+    }
+
+    public void openInventory(InventoryHolder inventoryHolder) {
+        player.openInventory(inventoryHolder.getInventory());
+    }
+
+
+    public void sendBlockChange(Location location, Material material) {
+        player.sendBlockChange(location, material, (byte) 0);
+    }
+
+    public void setDisplayName(String name) {
+        player.setDisplayName(name + Chat.RESET);
+    }
+
+    /**
+     * Recommended value is between -1 and 1
+     */
+    public void setMoveSpeed(float value) {
+        player.setWalkSpeed(value);
+    }
+
+/*    public void setOverheadPrefix(String prefix) {
+        this.prefix = TextHelper.shrink(prefix, false);
+        if(sidebar != null && getHandle().playerConnection != null) {
+            sidebar.modifyTitle(this.prefix + username + this.suffix);
+        }
+        CCChat.loneBoard.update(this);
+    }
+
+    public void setOverheadSuffix(String suffix) {
+        this.suffix = TextHelper.shrink(suffix, false);
+        if(sidebar != null && getHandle().playerConnection != null) {
+            sidebar.modifyTitle(this.prefix + username + this.suffix);
+        }
+        CCChat.loneBoard.update(this);
+    }*/
+
+    public void setTabListName(String name) {
+        player.setPlayerListName(TextHelper.shrink(name, true));
+    }
+
+    public void setRank(int donorLevel, int staffLevel) {
+        this.service().donorLevel = donorLevel;
+        this.service().staffLevel = staffLevel;
+    }
+
+    /*
+     * Event
+     */
+
+    /*
+     * BullData
+     */
+
+    public EntityPlayer getHandle() {
+        return player != null ? ((CraftPlayer)player).getHandle() : null;
+    }
+
+
+
+}

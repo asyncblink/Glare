@@ -1,0 +1,79 @@
+package com.gmail.mooman219.module.region.store;
+
+import com.fasterxml.jackson.core.JsonGenerationException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.gmail.mooman219.frame.serialize.JsonHelper;
+import com.gmail.mooman219.frame.serialize.jack.ConfigJackson;
+import com.gmail.mooman219.layout.ModuleType;
+import com.gmail.mooman219.module.region.api.RegionCombatType;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.UUID;
+
+public class DataRegion extends ConfigJackson {
+    private static ConfigData data;
+
+    public DataRegion() {
+        super(ModuleType.REGION.getCast(), ModuleType.REGION.getDirectory(), "region", "data");
+    }
+
+    public static ConfigData getData() {
+        return data;
+    }
+
+    public static FastRegion getGlobal() {
+        return data.globalInfo;
+    }
+
+    public static HashMap<UUID, FastRegion> getRegions() {
+        return data.regionMap;
+    }
+
+    @Override
+    public void onLoad(File file) {
+        data = JsonHelper.fromJackson(file, ConfigData.class);
+        data.regionMap.clear();
+        for(FastRegion region : data.regions) {
+            data.regionMap.put(region.getUUID(), region);
+        }
+    }
+
+    @Override
+    public void onSave(File file) {
+        data.regions.clear();
+        for(FastRegion region : data.regionMap.values()) {
+            data.regions.add(region);
+        }
+        try {
+            JsonHelper.getFancyJackson().writeValue(file, data);
+        } catch(JsonGenerationException e) {
+            e.printStackTrace();
+        } catch(JsonMappingException e) {
+            e.printStackTrace();
+        } catch(IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void validateData() {
+        if(data == null) {
+            data = new ConfigData();
+        }
+    }
+
+    public static class ConfigData {
+        public transient final FastRegion globalInfo;
+        public transient HashMap<UUID, FastRegion> regionMap = new HashMap<UUID, FastRegion>();
+        public ArrayList<FastRegion> regions = new ArrayList<FastRegion>();
+
+        protected ConfigData() {
+            globalInfo = new FastRegion("283453ad-094b-92b7-b191-a07bff41d667", "global", "Global");
+            globalInfo.setDescription("No region exists here");
+            globalInfo.setCombatType(RegionCombatType.SAFE);
+        }
+    }
+}

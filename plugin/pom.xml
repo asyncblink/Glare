@@ -5,11 +5,141 @@
     <parent>
         <artifactId>Glare</artifactId>
         <groupId>com.liquiddonut</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>${global.version}</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>plugin</artifactId>
 
+
+            <build>
+                <finalName>glare</finalName>
+                <resources>
+                    <resource>
+                        <directory>src/main/resources</directory>
+                        <filtering>true</filtering>
+                    </resource>
+                </resources>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
+                        <version>3.1</version>
+                        <configuration>
+                            <source>1.8</source>
+                            <target>1.8</target>
+                            <encoding>UTF-8</encoding>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>2.4.3</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <!--<configuration>
+                                    <artifactSet>
+                                        <includes>
+                                            <include>com.fasterxml.jackson.core:jackson-core</include>
+                                        </includes>
+                                    </artifactSet>
+                                </configuration>-->
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-antrun-plugin</artifactId>
+                        <version>1.8</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <configuration>
+                                    <target>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="C:/SSD-Projects/Glare/Servers/US-0/plugins"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="C:/SSD-Projects/Glare/Servers/US-1/plugins"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="C:/SSD-Projects/Glare/Servers/US-2/plugins"/>
+                                        <copy file="${project.build.directory}/${project.build.finalName}.jar"
+                                              todir="C:/SSD-Projects/Glare/Servers/US-3/plugins"/>
+                                    </target>
+                                </configuration>
+                                <goals>
+                                    <goal>run</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+    <dependencies>
+        <!-- Jackson -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>LATEST</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>LATEST</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>LATEST</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.module</groupId>
+            <artifactId>jackson-module-afterburner</artifactId>
+            <version>LATEST</version>
+        </dependency>
+        <!-- Gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>LATEST</version>
+        </dependency>
+        <!-- Database -->
+        <dependency>
+            <groupId>org.mongodb</groupId>
+            <artifactId>mongo-java-driver</artifactId>
+            <version>2.14.2</version>
+        </dependency>
+        <!-- ProtocolLib -->
+        <dependency>
+            <groupId>com.comphenix.protocol</groupId>
+            <artifactId>ProtocolLib</artifactId>
+            <version>4.1.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.liquiddonut</groupId>
+            <artifactId>Spigot-API</artifactId>
+            <scope>system</scope>
+            <version>1.11</version>
+            <systemPath>C:/SSD-Projects/Glare/.lib/Spigot-API.jar</systemPath>
+        </dependency>
+        <dependency>
+            <groupId>com.liquiddonut</groupId>
+            <artifactId>Spigot-Server</artifactId>
+            <scope>system</scope>
+            <version>1.11</version>
+            <systemPath>C:/SSD-Projects/Glare/.lib/Spigot-Server.jar</systemPath>
+        </dependency>
+
+        <dependency>
+            <groupId>net.md-5</groupId>
+            <artifactId>bungeecord-api</artifactId>
+            <version>1.11-SNAPSHOT</version>
+            <type>jar</type>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 
 </project>
